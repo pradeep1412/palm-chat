@@ -34,18 +34,18 @@ examples = [
   ]
 ]
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+messages = []
+
 def chat_bot(text):
-    st.session_state.messages.append({"sender": "user", "message": text})
+    messages.append({"sender": "user", "message": text})
     response = palm.chat(
         **defaults,
         context=context,
         examples=examples,
-        messages= [message["message"] for message in st.session_state.messages]  # Pass the messages list, not just the text
+        messages= [message["message"] for message in messages]  # Pass the messages list, not just the text
     )
     temp = response.last
-    st.session_state.messages.append({"sender": "bot", "message": temp})
+    messages.append({"sender": "bot", "message": temp})
     return temp
 
 def generate_audio(text):
@@ -63,8 +63,8 @@ if st.button("Search"):
     if text:
         response = chat_bot(text)
         
-        user_messages = [message for message in st.session_state.messages if message["sender"] == "user"]
-        bot_messages = [message for message in st.session_state.messages if message["sender"] == "bot"]
+        user_messages = [message for message in messages if message["sender"] == "user"]
+        bot_messages = [message for message in messages if message["sender"] == "bot"]
         
         for user_msg, bot_msg in zip(reversed(user_messages), reversed(bot_messages)):
             with st.chat_message("user"):
