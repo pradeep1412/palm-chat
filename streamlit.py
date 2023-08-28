@@ -59,7 +59,7 @@ st.title("AI Chat Bot")
 text = st.text_input("Enter your message")
 
 
-if st.button("Send"):
+if st.button("Search"):
     if text:
         response = chat_bot(text)
         
