@@ -3,6 +3,8 @@ import google.generativeai as palm
 #from dotenv import load_dotenv
 import os
 import pyttsx3
+import io
+import base64
 
 
 engine = pyttsx3.init()
