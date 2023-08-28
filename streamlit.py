@@ -2,6 +2,10 @@ import streamlit as st
 import google.generativeai as palm
 #from dotenv import load_dotenv
 import os
+import pyttsx3
+
+
+engine = pyttsx3.init()
 
 #load_dotenv()
 api_key = os.getenv("PALM_MODEL_API")
@@ -39,10 +43,16 @@ def chat_bot(text):
         context=context,
         examples=examples,
         messages=text
-        )
+    )
     temp = response.last
     messages.append(temp)
     return temp
+
+def generate_audio(text):
+    audio_stream = io.BytesIO()
+    engine.save_to_buffer(text, audio_stream)
+    audio_stream.seek(0)
+    return audio_stream.read()
 
 st.title("AI Chat Bot")
 
@@ -50,3 +60,7 @@ text = st.text_input("Enter your message")
 if st.button("Search"):
     response = chat_bot(text)
     st.write(response)
+
+    # Add audio play button to play the generated speech
+    if response:
+        audio_data = generate_audio(response)
