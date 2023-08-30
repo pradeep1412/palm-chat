@@ -4,6 +4,7 @@ import google.generativeai as palm
 import os
 from gtts import gTTS
 from io import BytesIO
+import PyPDF2
 
 # load_dotenv()
 api_key = os.getenv("PALM_MODEL_API")
@@ -72,4 +73,10 @@ if st.button("Search"):
             with st.chat_message("assistant"):
                 st.write(bot_msg['message'])
                 if response == bot_msg['message']:
+                  pdf = PyPDF2.PdfFileWriter()
+                  pdf.addPage(PyPDF2.PdfPage(response))
+                  with BytesIO() as output:
+                      pdf.write(output)
+                      output.seek(0)
+                      return output
                   st.audio(generate_audio(response), format='audio/ogg')
