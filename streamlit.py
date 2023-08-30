@@ -3,11 +3,18 @@ import google.generativeai as palm
 # from dotenv import load_dotenv
 import os
 from gtts import gTTS
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import fonts
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
-import PyPDF2
 
 # load_dotenv()
 api_key = os.getenv("PALM_MODEL_API")
+pdfmetrics.registerFont(TTFont('Amble-Regular', 'Amble-Regular.ttf'))
+pdfmetrics.registerFont(TTFont('kg-broken-vessels-sketch.regular', 'kg-broken-vessels-sketch.regular.ttf'))
 
 palm.configure(api_key=api_key)
 
@@ -35,18 +42,60 @@ examples = [
   ]
 ]
 
-messages = []
+def generate_pdf(messages, question):
+    messages = messages.split("\n")
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    
+    custom_style = ParagraphStyle(
+        name="CustomStyle",
+        fontName="Amble-Regular",  
+        fontSize=16,                
+        leading=18,                 
+        textColor="black"            
+    )
+    
+    custom_style_header = ParagraphStyle(
+        name="CustomStyle",
+        fontName="kg-broken-vessels-sketch.regular",  
+        fontSize=24,                
+        leading=18,             
+        textColor="black"            
+    )
+
+    content = []
+    
+    content.append(Paragraph(question, custom_style_header))
+    content.append(Spacer(1, 12))
+    content.append(Paragraph(""))
+    content.append(Spacer(1, 12))
+    print(messages)
+    for message in messages:
+        content.append(Paragraph(message))
+        content.append(Spacer(1, 12))  
+
+    doc.build(content)
+    buffer.seek(0)
+    return buffer
+
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = []
+    
+if 'response' not in st.session_state:
+    st.session_state['response'] = []
 
 def chat_bot(text):
-    messages.append({"sender": "user", "message": text})
+    st.session_state["messages"] = []
+    st.session_state.messages.append({"sender": "user", "message": text})
+    # suffix = "Title$$##: [Enter the title of the article] Contains$$##: [Enter the main points or content you want in the article]"
     response = palm.chat(
         **defaults,
         context=context,
         examples=examples,
-        messages= [message["message"] for message in messages]  # Pass the messages list, not just the text
+        messages= [message["message"] for message in st.session_state.messages]  # Pass the messages list, not just the text
     )
     temp = response.last
-    messages.append({"sender": "bot", "message": temp})
+    st.session_state.messages.append({"sender": "bot", "message": temp})
     return temp
 
 def generate_audio(text):
@@ -62,21 +111,24 @@ text = st.text_input("Enter your message")
 
 if st.button("Search"):
     if text:
-        response = chat_bot(text)
+        st.session_state.response = chat_bot(text)
         
-        user_messages = [message for message in messages if message["sender"] == "user"]
-        bot_messages = [message for message in messages if message["sender"] == "bot"]
-        
-        for user_msg, bot_msg in zip(reversed(user_messages), reversed(bot_messages)):
-            with st.chat_message("user"):
-                st.write(user_msg['message'])
-            with st.chat_message("assistant"):
-                st.write(bot_msg['message'])
-                if response == bot_msg['message']:
-                  pdf = PyPDF2.PdfFileWriter()
-                  pdf.addPage(PyPDF2.PdfPage(response))
-                  with BytesIO() as output:
-                      pdf.write(output)
-                      output.seek(0)
-                      return output
-                  st.audio(generate_audio(response), format='audio/ogg')
+
+user_messages = [message for message in st.session_state.messages if message["sender"] == "user"]
+bot_messages = [message for message in st.session_state.messages if message["sender"] == "bot"]
+
+for user_msg, bot_msg in zip(reversed(user_messages), reversed(bot_messages)):
+    with st.chat_message("user"):
+        st.write(user_msg['message'])
+    with st.chat_message("assistant"):
+        st.write(bot_msg['message'])
+        if st.session_state.response == bot_msg['message']:
+          st.audio(generate_audio(st.session_state.response), format='audio/ogg')
+          pdf_buffer = generate_pdf(st.session_state.response, user_msg['message'])
+          st.subheader("Download PDF")
+          st.write("Click the link below to download the PDF:")
+          st.download_button(
+              label="Download PDF",
+              data=pdf_buffer,
+              file_name="generated_pdf.pdf",
+              mime="application/pdf")
