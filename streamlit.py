@@ -68,7 +68,6 @@ def generate_pdf(messages, question):
     content.append(Spacer(1, 12))
     content.append(Paragraph(""))
     content.append(Spacer(1, 12))
-    print(messages)
     for message in messages:
         if message != "":
           content.append(Paragraph(message))
