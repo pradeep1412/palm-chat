@@ -13,7 +13,6 @@ from io import BytesIO
 
 # load_dotenv()
 api_key = os.getenv("PALM_MODEL_API")
-pdfmetrics.registerFont(TTFont('Amble-Regular', 'Amble-Regular.ttf'))
 pdfmetrics.registerFont(TTFont('kg-broken-vessels-sketch.regular', 'kg-broken-vessels-sketch.regular.ttf'))
 
 palm.configure(api_key=api_key)
