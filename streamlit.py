@@ -108,9 +108,7 @@ st.title("AI Chat Bot")
 text = st.text_input("Enter your message")
 
 
-if st.button("Search"):
-    if text:
-        st.session_state.response = chat_bot(text)
+if st.button("Search") or text: st.session_state.response = chat_bot(text)
         
 
 user_messages = [message for message in st.session_state.messages if message["sender"] == "user"]
